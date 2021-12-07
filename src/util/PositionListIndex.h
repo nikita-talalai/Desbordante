@@ -64,7 +64,9 @@ public:
     unsigned int getNumNonSingletonCluster()    const { return index.size(); }
     unsigned int getNumCluster()                const { return index.size() + originalRelationSize - size; }
     unsigned int getFreq()                      const { return freq_; }
+    // get stripped partition value count, excluding singletons
     unsigned int getSize()                      const { return size; }
+    unsigned int getRelationSize()              const { return relationSize; }
     double getEntropy()                         const { return entropy; }
     double getInvertedEntropy()                 const { return invertedEntropy; }
     double getGiniImpurity()                    const { return giniImpurity; }

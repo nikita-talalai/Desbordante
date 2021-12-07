@@ -16,13 +16,15 @@
 #include "algorithms/Fd_mine.h"
 #include "algorithms/FastFDs.h"
 #include "algorithms/depminer/Depminer.h"
+#include "algorithms/HyFD/HyFD.h"
 
 namespace po = boost::program_options;
 
 INITIALIZE_EASYLOGGINGPP
 
 bool checkOptions(std::string const& alg, double error) {
-    if (alg != "pyro" && alg != "tane" && alg != "fastfds" && alg != "fdmine" && alg != "dfd" && alg != "depminer") {
+    if (alg != "pyro" && alg != "tane" && alg != "fastfds" && alg != "fdmine"
+            && alg != "dfd" && alg != "depminer" && alg != "hyfd") {
         std::cout << "ERROR: no matching algorithm. Available algorithms are:\n\tpyro\n\ttane.\n" << std::endl;
         return false;
     }
@@ -101,6 +103,8 @@ int main(int argc, char const *argv[]) {
         algorithmInstance = std::make_unique<FastFDs>(path, separator, hasHeader, maxLhs, parallelism);
     } else if (alg == "depminer") {
         algorithmInstance = std::make_unique<Depminer>(path, separator, hasHeader);
+    } else if (alg == "hyfd") {
+        algorithmInstance = std::make_unique<HyFD::HyFD>(path, separator, hasHeader);
     }
     try {
         unsigned long long elapsedTime = algorithmInstance->execute();
