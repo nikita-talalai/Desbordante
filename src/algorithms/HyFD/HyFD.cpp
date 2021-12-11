@@ -33,14 +33,14 @@ namespace HyFD {
             }
         }
 
-        Sampler sampler(plis);
+        Sampler sampler(plis, std::move(pliRecords));
         Inductor inductor;
         Validator validator;
 
         std::vector<std::pair<size_t, size_t>> comparisonSuggestions;
 
         while (true) {
-            const auto fdList = sampler.getNonFDCandidate(comparisonSuggestions);
+            const auto fdList = sampler.getNonFDCandidates(comparisonSuggestions);
 
             inductor.update(fdList);
 

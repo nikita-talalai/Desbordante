@@ -1,8 +1,8 @@
 #pragma once 
 
 #include "HyFD.h"
-#include "structures/nonFDList.h"
-#include "structures/FDSet.h"
+#include "structures/NonFDList.h"
+#include "structures/NonFds.h"
 #include "structures/FDTree.h"
 
 #include <memory>
@@ -15,82 +15,71 @@ namespace HyFD {
 using PLIS = std::vector<std::shared_ptr<util::PositionListIndex>>;
 class Efficiency{
 private:
-    size_t attr;
-    int results;
+    size_t columnId;
 
-    int comps;
-    int window;
+    //TODO: num* dependent on windowSize?
+    unsigned numViolations = 0;
+    unsigned numComparisons = 0;
+    unsigned window = 2;
 public:
-    explicit Efficiency(size_t attr):
-        attr(attr)
-    {
-        window = 2;
-    }
+    explicit Efficiency(size_t columnId) : columnId(columnId) {}
 
     double calcEfficiency() const {
-        if (comps == 0) {
-            return  0.0;
+        if (numComparisons == 0) {
+            return 0.0;
         }
 
-        return 1.00 * results / comps;
+        return 1.00 * numViolations / numComparisons;
     }
 
     void incrementWindow() {
         window++;
     }
 
-    void setComps(int newComps){
-        comps = newComps;
+    void addComparisons(unsigned numNewComparisons) {
+        numComparisons += numNewComparisons;
     }
 
-    void setResults(int newResults){
-        results = newResults;
+    void addViolations(unsigned numNewViolations) {
+        numViolations += numNewViolations;
     }
-
 
     size_t getAttr() const {
-        return attr;
+        return columnId;
     }
 
-    int getWindow() const {
+    unsigned getWindow() const {
         return window;
     }
-
-
 };
 
-inline  bool operator < (const Efficiency &lhs, const Efficiency & rhs){
-    return  lhs.calcEfficiency() < rhs.calcEfficiency();
+inline bool operator<(Efficiency const& lhs, Efficiency const& rhs){
+    return lhs.calcEfficiency() < rhs.calcEfficiency();
 }
 
-class Sampler{
+class Sampler {
 private:
 
     PLIS plis;
+    std::vector<std::vector<int>> compressedRecords;
     std::priority_queue<Efficiency> efficiencyQueue;
 
     double efficiencyThreshold; //TODO: out into HyFD conf or smth
-    std::vector<std::vector<int>> compressedRecords;
-    std::shared_ptr<FDSet> fdSet;
+    std::shared_ptr<NonFds> nonFds;
 
 public:
-    explicit Sampler(const PLIS &plis):
-        plis(plis)
-
-    {
+    explicit Sampler(PLIS const& plis, std::vector<std::vector<int>>&& pliRecords):
+            plis(plis), compressedRecords(std::move(pliRecords)) {
         efficiencyThreshold = 0.01;
-        fdSet = std::make_shared<FDSet> (plis.size());
+        nonFds = std::make_shared<NonFds>(plis.size());
     }
 
+    NonFDList getNonFDCandidates(std::vector<std::pair<size_t, size_t>> const& comparisonSuggestions);
 
-    std::shared_ptr<nonFDList> getNonFDCandidate(const std::vector<std::pair<size_t , size_t>> &comparisonSuggestions);
-
-    void match(boost::dynamic_bitset<> &bSet, int lhs, int rhs);
-
+    void match(boost::dynamic_bitset<>& bSet, size_t firstRecordId, size_t secondRecordId);
+    void runWindow(Sampler& sampler, Efficiency& efficiency, std::shared_ptr<util::PositionListIndex> pli);
 };
 
-void runWindow(Sampler &sampler, Efficiency &efficiency,
-                       std::shared_ptr<util::PositionListIndex> pli, std::shared_ptr<nonFDList> nonFds );
 
 }
 

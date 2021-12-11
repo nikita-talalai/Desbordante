@@ -6,8 +6,8 @@
 #include <map>
 #include <unordered_set>
 
-#include "structures/nonFDList.h"
-#include "structures/FDSet.h"
+#include "structures/NonFDList.h"
+#include "structures/NonFds.h"
 #include "HyFD.h"
 #include "structures/FDTree.h"
 #include "util/util.h"
@@ -47,9 +47,9 @@ namespace HyFD {
     class Validator {
     private:
         std::shared_ptr<FDTree> fds;
-        std::shared_ptr<FDSet> fdList;
+        std::shared_ptr<NonFds> fdList;
 
-        std::vector<std::shared_ptr<util::PositionListIndex>> plis;
+        std::vector<std::shared_ptr<util::PositionListIndex>> plis; //TODO: initialize lol
         double efficiencyThreshold;
 
         int currentLevelNumber;

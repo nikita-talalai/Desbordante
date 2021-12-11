@@ -2,80 +2,64 @@
 
 namespace HyFD {
 
-    void runWindow(Sampler &sampler, Efficiency &efficiency,
-                   std::shared_ptr<util::PositionListIndex> pli, std::shared_ptr<nonFDList> nonFds) {
+    void Sampler::runWindow(Sampler& sampler, Efficiency& efficiency, std::shared_ptr<util::PositionListIndex> pli) {
 
-        //efficiency.incrementWindow();
-        size_t numAttributes = nonFds->getNumAttributes();
+        size_t numAttributes = nonFds->numAttributes();
+        size_t prevNumNonFds = nonFds->count();
 
-        size_t prevNumNonFds = nonFds->getSize();
+        unsigned comps = 0;
+        unsigned window = efficiency.getWindow();
 
+        for (auto const& cluster: pli->getIndex()) {
+            for (size_t i = 0; window < cluster.size() && i < cluster.size() - window; ++i) {
+                int pivotId = cluster[i];
+                int partnerId = cluster[i + window - 1];
 
-        int comps = 0;
-
-        int window = efficiency.getWindow();
-
-        boost::dynamic_bitset<> equalAttrs(numAttributes);
-
-        for (auto &cluster: pli->getIndex()) {
-            for (size_t i = 0; i < cluster.size() - window; ++i) {
-                int pivot = cluster[i];
-
-                int partner = cluster[i + window - 1];
-
-                sampler.match(equalAttrs, pivot, partner);
+                boost::dynamic_bitset<> equalAttrs(numAttributes);
+                sampler.match(equalAttrs, pivotId, partnerId);
+                nonFds->add(equalAttrs);
 
                 comps++;
             }
-
         }
 
-        int results = nonFds->getSize() - prevNumNonFds;
+        size_t numNewViolations = nonFds->count() - prevNumNonFds;
 
-        efficiency.setResults(results);
-        efficiency.setComps(comps);
-
-
+        efficiency.addViolations(numNewViolations);
+        efficiency.addComparisons(comps); // TODO: mb just increment inside loop ^, or use an advanced formula
     }
 
-    std::shared_ptr<nonFDList>
-    Sampler::getNonFDCandidate(const std::vector<std::pair<size_t, size_t>> &comparisonSuggestions) {
+    NonFDList
+    Sampler::getNonFDCandidates(const std::vector<std::pair<size_t, size_t>> &comparisonSuggestions) {
         size_t numAttributes = plis.size();
-
-        std::shared_ptr<nonFDList> newNonFDs(new nonFDList(numAttributes));
 
         boost::dynamic_bitset<> equalAttrs(numAttributes);
 
-        for (auto sug: comparisonSuggestions) {
-            match(equalAttrs, sug.first, sug.second);
+        for (auto [firstId, secondId]: comparisonSuggestions) {
+            match(equalAttrs, firstId, secondId);
 
             //check ????
-            fdSet->add(equalAttrs);
+            nonFds->add(equalAttrs);
         }
 
         if (efficiencyQueue.empty()) {
 
-            //SORT??????
+            //TODO: SORT??????
 
             for (size_t attr = 0; attr < numAttributes; ++attr) {
                 Efficiency efficiency(attr);
 
-                runWindow(*this, efficiency, plis[attr], newNonFDs);
+                runWindow(*this, efficiency, plis[attr]);
 
                 if (efficiency.calcEfficiency() > 0) {
                     efficiencyQueue.push(efficiency);
                 }
-
-
             }
         } else {
-
             efficiencyThreshold = efficiencyThreshold / 2;
-
         }
 
         while (!efficiencyQueue.empty()) {
-
             Efficiency bestEff = efficiencyQueue.top();
             efficiencyQueue.pop();
 
@@ -84,17 +68,17 @@ namespace HyFD {
             }
 
             bestEff.incrementWindow();
-
-            runWindow(*this, bestEff, plis[bestEff.getAttr()], newNonFDs);
+            runWindow(*this, bestEff, plis[bestEff.getAttr()]);
         }
 
-        return newNonFDs;
-
+        return nonFds->moveOutNewNonFds();
     }
 
-    void Sampler::match(boost::dynamic_bitset<> &bSet, int lhs, int rhs) {
+    void Sampler::match(boost::dynamic_bitset<>& bSet, size_t firstRecordId, size_t secondRecordId) {
+        assert(firstRecordId < compressedRecords.size() && secondRecordId < compressedRecords.size());
+
         for (size_t i = 0; i < compressedRecords[0].size(); ++i) {
-            if (compressedRecords[lhs][i] == compressedRecords[rhs][i]) {
+            if (compressedRecords[firstRecordId][i] == compressedRecords[secondRecordId][i]) {
                 bSet.set(i);
             }
         }

@@ -2,12 +2,14 @@
 
 namespace HyFD {
 
-    void Inductor::update(std::shared_ptr<nonFDList> fdlist) {
-        int maxLevel = fdlist->getDepth() - 1;
-        //sort?????????????
-        for (int level = maxLevel; level >= 0; level--) {
+    void Inductor::update(NonFDList const& fdlist) {
+        assert(fdlist.getDepth() != 0);
+        unsigned maxLevel = fdlist.getDepth(); // - 1;
+        //sort????????????? - done by level layout
+        bool processedZeroLevel = false;
+        for (unsigned level = maxLevel; !processedZeroLevel; processedZeroLevel = (level == 0), level--) { // TODO: как бы проитерироваться
 
-            for (const auto &lhs: fdlist->getLevel(level)) {
+            for (const auto &lhs: fdlist.getLevel(level)) {
 
                 auto rhss = lhs;
 
