@@ -29,7 +29,7 @@ namespace HyFD {
 
                 if (!isConstant(plis[attr])) {
 
-                    vertex->removeAttributes(attr);
+                    vertex->removeAttribute(attr);
                     result.invalidFDs.push_back({lhs, attr});
                 }
             }
@@ -54,7 +54,7 @@ namespace HyFD {
 
                             if (compressedRecords[id][attr] != clusterId) {
 
-                                vertex->removeAttributes(attr);
+                                vertex->removeAttribute(attr);
                                 result.invalidFDs.push_back({lhs, attr});
 
                                 break;
@@ -62,7 +62,7 @@ namespace HyFD {
                         }
                     } else {
 
-                        vertex->removeAttributes(attr);
+                        vertex->removeAttribute(attr);
                         result.invalidFDs.push_back({lhs, attr});
                         break;
                     }
@@ -201,7 +201,7 @@ namespace HyFD {
             for (auto &lhsPair:  curLevelVertexs) {
                 auto vertex = lhsPair.first;
 
-                if (!vertex->anyChild()) {
+                if (!vertex->hasChildren()) {
 
                     continue;
                 }

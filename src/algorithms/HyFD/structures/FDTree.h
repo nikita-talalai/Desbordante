@@ -5,22 +5,22 @@
 #include <iostream>
 #include <memory>
 
+//TODO: to .cpp or smth; tests
 
-namespace HyFD {
+namespace HyFD::FDTree {
 
     class FDTreeVertex;
 
     using LhsPair = std::pair<std::shared_ptr<FDTreeVertex>, boost::dynamic_bitset<>>;
 
-    class FDTreeVertex {
+    class FDTreeVertex : private std::enable_shared_from_this<FDTreeVertex> {
     private:
         std::vector<std::shared_ptr<FDTreeVertex>> childs;
         boost::dynamic_bitset<> attributes;
         boost::dynamic_bitset<> fds;
         size_t numAttributes;
 
-        bool containChilds;
-
+        bool containsChildren = false;
 
     public:
         explicit FDTreeVertex(size_t numAttributes) :
@@ -31,54 +31,49 @@ namespace HyFD {
             return numAttributes;
         }
 
-        void setFds(const boost::dynamic_bitset<> newFds) {
+        void setFds(boost::dynamic_bitset<> newFds) {
             fds = newFds;
         }
-
 
         boost::dynamic_bitset<> getAttributes() const {
             return attributes;
         }
 
-
-        void addAttributes(size_t pos) {
+        void addAttribute(size_t pos) {
             attributes.set(pos);
         }
 
-        void removeAttributes(size_t pos) {
-            attributes[pos] = false;
+        void removeAttribute(size_t pos) {
+            attributes.reset(pos);
         }
 
-        void addFds(size_t pos) {
+        void addFd(size_t pos) {
             fds.set(pos);
         }
 
-
-        void remove(size_t pos) {
-            fds[pos] = false;
+        void removeFd(size_t pos) {
+            fds.reset(pos);
         }
 
         void removeAttr(size_t pos) {
-            attributes[pos] = false;
+            attributes.reset(pos);
         }
 
-        bool getFDs(size_t pos) const {
+        bool isFd(size_t pos) const {
             return fds.test(pos);
         }
 
-
-        bool getAttributes(size_t pos) const {
+        bool isAttribute(size_t pos) const {
             return fds.test(pos);
         }
 
         void addChild(size_t pos) {
-
-            containChilds = true;
+            containsChildren = true;
             if (childs.empty()) {
                 childs.resize(numAttributes);
             }
 
-            if (!containChild(pos)) {
+            if (!containsChildAt(pos)) {
                 childs[pos] = std::make_shared<FDTreeVertex>(numAttributes);
             }
         }
@@ -87,139 +82,124 @@ namespace HyFD {
             return attributes.count() > 0;
         }
 
+        // TODO: shared_ptr<const>
         std::shared_ptr<FDTreeVertex> getChild(size_t pos) const {
             return childs.at(pos);
         }
 
-        void getLevelRecursive(int level, int curLevel, boost::dynamic_bitset<> lhs, std::vector<LhsPair> &vertexs) {
-
-            if (curLevel == level) {
-
-                vertexs.push_back({std::shared_ptr<FDTreeVertex>(this), lhs});
-                return;
-            }
-
-            if (!anyChild()) {
-                return;
-            }
-
-
-            for (size_t i = 0; i < numAttributes; ++i) {
-
-                if (containChild(i)) {
-                    lhs.set(i);
-
-                    childs[i]->getLevelRecursive(level, curLevel + 1, lhs, vertexs);
-
-                    lhs[i] = 0;
-                }
-            }
-
+        bool containsChildAt(size_t pos) const {
+            return childs.at(pos) != nullptr;
         }
 
+        bool hasChildren() const {
+            return containsChildren;
+        }
 
-        void getFdAndGeneralslRecursive(const dynamic_bitset<> lhs, boost::dynamic_bitset<> &curLhs,
-                                        int rhs, int curBit, std::vector<boost::dynamic_bitset<>> &result) {
+        void getLevelRecursive(unsigned targetLevel, unsigned curLevel, boost::dynamic_bitset<> lhs, std::vector<LhsPair>& vertices) {
 
-            if (getFDs(rhs)) {
+            if (curLevel == targetLevel) {
+                vertices.emplace_back(shared_from_this(), lhs);
+                return;
+            }
 
+            if (!hasChildren()) {
+                return;
+            }
+
+            // TODO: maybe use 'attributes' to visit children?
+            for (size_t i = 0; i < numAttributes; ++i) {
+
+                if (containsChildAt(i)) {
+                    lhs.set(i);
+
+                    childs[i]->getLevelRecursive(targetLevel, curLevel + 1, lhs, vertices);
+
+                    lhs[i] = false;
+                }
+            }
+        }
+
+        void getFdAndGeneralsRecursive(dynamic_bitset<> lhs, boost::dynamic_bitset<> curLhs,
+                                       size_t rhs, size_t curBit, std::vector<boost::dynamic_bitset<>>& result) {
+            if (isFd(rhs)) {
                 result.push_back(curLhs);
             }
 
-            if (!anyChild()) {
-
+            if (!hasChildren()) {
                 return;
             }
 
-            for (int attr = curBit; attr >= 0; attr = lhs.find_next(attr + 1)) {
-                if (containChild(attr)) {
-                    if (childs[attr]->getAttributes(rhs)) {
+            for (auto attrId = curBit; attrId < lhs.size(); attrId = lhs.find_next(attrId)) {
+                if (containsChildAt(attrId) && childs[attrId]->isAttribute(rhs)) {
 
-                        curLhs.set(attr);
-                        childs[attr]->getFdAndGeneralslRecursive(lhs, curLhs, rhs, lhs.find_next(attr + 1), result);
-
-                        curLhs[attr] = 0;
-                    }
+                    curLhs.set(attrId);
+                    childs[attrId]->getFdAndGeneralsRecursive(lhs, curLhs, rhs, lhs.find_next(attrId), result);
+                    curLhs.reset(attrId);
                 }
             }
-
-
         }
 
-        bool findFdOrGeneralRecursive(const dynamic_bitset<> lhs, int rhs, int curBit) {
+        bool findFdOrGeneralRecursive(dynamic_bitset<> lhs, size_t rhs, size_t curBit) {
 
-            if (curBit < 0) {
+            if (curBit >= lhs.size()) {
                 return false;
             }
-            if (getFDs(rhs)) {
+
+            // TODO: probably 'childs[curBit]->isFd(rhs)' is wrong
+            if (isFd(rhs) || (containsChildAt(curBit) && childs[curBit]->isFd(rhs)
+                              && childs[curBit]->findFdOrGeneralRecursive(lhs, rhs, lhs.find_next(curBit)))) {
                 return true;
             }
 
-            if (containChild(curBit) && childs[curBit]->getFDs(rhs)) {
-                if (childs[curBit]->findFdOrGeneralRecursive(lhs, rhs, lhs.find_next(curBit + 1))) {
-                    return true;
-                }
-            }
-
-            return findFdOrGeneralRecursive(lhs, rhs, lhs.find_next(curBit + 1));
-
+            return findFdOrGeneralRecursive(lhs, rhs, lhs.find_next(curBit));
         }
-
-        bool containChild(size_t pos) const {
-            return bool(childs.at(pos));
-        }
-
-        bool anyChild() const {
-            return containChilds;
-        }
-
     };
-
-    using LhsPair = std::pair<std::shared_ptr<FDTreeVertex>, boost::dynamic_bitset<>>;
 
     class FDTree {
     private:
-
-
         std::shared_ptr<FDTreeVertex> root;
+
     public:
+        explicit FDTree(size_t numAttributes) : root(std::make_shared<FDTreeVertex>(numAttributes)) {}
 
         size_t numAttributes() const {
             return root->numAttrs();
         }
 
-        void addFD(boost::dynamic_bitset<> lhs, int rhs) {
+        // TODO: ummm... recursive calls? depth > 1??
+        void addFD(boost::dynamic_bitset<> lhs, size_t rhs) {
             std::shared_ptr<FDTreeVertex> curNode = root;
-            root->addAttributes(rhs);
+            root->addAttribute(rhs);
 
-
+            // bit < ...
             for (int bit = lhs.find_first(); bit >= 0; bit = lhs.find_next(bit + 1)) {
 
                 curNode->addChild(bit);
                 curNode = root->getChild(bit);
 
-                curNode->addAttributes(rhs);
+                curNode->addAttribute(rhs);
             }
         }
 
 
-        bool containFD(boost::dynamic_bitset<> lhs, int rhs) {
+        //TODO: same
+        bool containFD(boost::dynamic_bitset<> lhs, size_t rhs) {
             std::shared_ptr<FDTreeVertex> curNode = root;
 
-            if (!root->anyChild()) {
+            if (!root->hasChildren()) {
                 return false;
             }
 
             for (int bit = lhs.find_first(); bit >= 0; bit = lhs.find_next(bit)) {
 
-                if (!curNode->containChild(bit)) {
+                if (!curNode->containsChildAt(bit)) {
                     return false;
                 }
 
                 curNode = curNode->getChild(bit);
             }
 
-            return curNode->getFDs(rhs);
+            return curNode->isFd(rhs);
 
         }
 
@@ -232,20 +212,20 @@ namespace HyFD {
             auto curNode = getRoot();
 
             for (int attr = lhs.find_first();; attr = lhs.find_next(attr + 1)) {
-                if (!curNode->containChild(attr)) {
+                if (!curNode->containsChildAt(attr)) {
                     break;
                 }
 
                 curNode = curNode->getChild(attr);
             }
 
-            root->removeAttributes(rhs);
-            root->remove(rhs);
+            root->removeAttribute(rhs);
+            root->removeFd(rhs);
 
             bool foundRhs = false;
 
             for (int attr = 0, numAttr = numAttributes(); attr < numAttr; attr++) {
-                if (root->containChild(attr) && root->getChild(attr)->getAttributes(rhs)) {
+                if (root->containsChildAt(attr) && root->getChild(attr)->isAttribute(rhs)) {
                     foundRhs = true;
 
                     break;
@@ -253,7 +233,7 @@ namespace HyFD {
             }
 
             if (!foundRhs) {
-                root->removeAttributes(rhs);
+                root->removeAttribute(rhs);
             }
 
             if (root->anyRhsAttr()) {
@@ -262,30 +242,31 @@ namespace HyFD {
 
         }
 
-        std::vector<boost::dynamic_bitset<>> getFdAndGenerals(boost::dynamic_bitset<> lhs, int rhs) {
-            std::vector<boost::dynamic_bitset<>> result;
+        std::vector<boost::dynamic_bitset<>> getFdAndGenerals(boost::dynamic_bitset<> targetLhs, size_t targetRhs) {
+            assert(targetLhs.count() != 0);
 
-            boost::dynamic_bitset<> curLhs;
-            root->getFdAndGeneralslRecursive(lhs, curLhs, rhs, lhs.find_first(), result);
+            std::vector<boost::dynamic_bitset<>> result;
+            const boost::dynamic_bitset<> emptyLhs(numAttributes());
+            const size_t startingBit = targetLhs.find_first();
+
+            root->getFdAndGeneralsRecursive(targetLhs, emptyLhs, targetRhs, startingBit, result);
 
             return result;
         }
 
-        bool findFdOrGeneral(boost::dynamic_bitset<> lhs, int rhs) {
+        bool findFdOrGeneral(boost::dynamic_bitset<> lhs, size_t rhs) {
             return root->findFdOrGeneralRecursive(lhs, rhs, lhs.find_first());
         }
 
-        std::vector<LhsPair> getLevel(int level) {
+        std::vector<LhsPair> getLevel(unsigned targetLevel) {
 
-            boost::dynamic_bitset<> lhs(numAttributes());
+            boost::dynamic_bitset<> emptyLhs(numAttributes());
 
-            std::vector<LhsPair> vertexs;
-            root->getLevelRecursive(level, 0, lhs, vertexs);
+            std::vector<LhsPair> vertices;
+            root->getLevelRecursive(targetLevel, 0, emptyLhs, vertices);
 
-
-            return vertexs;
+            return vertices;
         }
-
     };
 
 }

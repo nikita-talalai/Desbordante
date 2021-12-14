@@ -12,12 +12,12 @@ namespace HyFD {
 
     class Inductor {
     private:
-        std::shared_ptr<FDTree> tree;
+        std::shared_ptr<FDTree::FDTree> tree;
     public:
 
         void update(NonFDList const& fdlist);
 
-        void specialize(boost::dynamic_bitset<> lhs, int rhs);
+        void specialize(boost::dynamic_bitset<> lhsBits, size_t rhsId);
 
     };
 

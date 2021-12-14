@@ -14,8 +14,7 @@
 
 namespace HyFD {
 
-    using LhsPair = std::pair<std::shared_ptr<FDTreeVertex>, boost::dynamic_bitset<>>;
-
+    using LhsPair = FDTree::LhsPair;
 
     struct FD {
         boost::dynamic_bitset<> lhs;
@@ -46,7 +45,7 @@ namespace HyFD {
 
     class Validator {
     private:
-        std::shared_ptr<FDTree> fds;
+        std::shared_ptr<FDTree::FDTree> fds;
         std::shared_ptr<NonFds> fdList;
 
         std::vector<std::shared_ptr<util::PositionListIndex>> plis; //TODO: initialize lol
