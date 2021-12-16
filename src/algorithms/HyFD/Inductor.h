@@ -1,11 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <iostream>
-
 #include "structures/NonFDList.h"
-#include "structures/NonFds.h"
-#include "HyFD.h"
 #include "structures/FDTree.h"
 
 namespace HyFD {

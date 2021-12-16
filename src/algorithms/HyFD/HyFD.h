@@ -1,28 +1,11 @@
 #pragma once 
 
-#include "RelationData.h"
-#include "CSVParser.h"
-#include "PositionListIndex.h"
 #include <string>
-
-
-#include <chrono>
-#include <iostream>
 #include <vector>
-#include <list>
-#include <memory>
 #include <filesystem>
 
-#include "ColumnCombination.h"
-#include "ColumnData.h"
-#include "ColumnLayoutRelationData.h"
+#include "PositionListIndex.h"
 #include "PliBasedFDAlgorithm.h"
-#include "RelationalSchema.h"
-#include "LatticeLevel.h"
-#include "LatticeVertex.h"
-#include "Sampler.h"
-#include "Inductor.h"
-#include "Validator.h"
 
 namespace HyFD {
 

@@ -1,16 +1,10 @@
 #pragma  once
 
 #include <vector>
-#include <iostream>
-#include <memory>
-#include <map>
-#include <unordered_set>
 
-#include "structures/NonFDList.h"
 #include "structures/NonFds.h"
-#include "HyFD.h"
 #include "structures/FDTree.h"
-#include "util/util.h"
+#include "util/PositionListIndex.h"
 
 namespace HyFD {
 
@@ -45,7 +39,7 @@ namespace HyFD {
 
     class Validator {
     private:
-        std::shared_ptr<FDTree::FDTree> fds;
+        std::shared_ptr<FDTree::FDTree> fds; //TODO: gets used in both Validator and Inductor -- move out to HyFD
         std::shared_ptr<NonFds> fdList;
 
         std::vector<std::shared_ptr<util::PositionListIndex>> plis; //TODO: initialize lol

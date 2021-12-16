@@ -2,8 +2,6 @@
 
 #include <boost/dynamic_bitset.hpp>
 #include <vector>
-#include <iostream>
-#include <memory>
 
 //TODO: to .cpp or smth; tests
 
@@ -13,10 +11,12 @@ namespace HyFD::FDTree {
 
     using LhsPair = std::pair<std::shared_ptr<FDTreeVertex>, boost::dynamic_bitset<>>;
 
-    class FDTreeVertex : private std::enable_shared_from_this<FDTreeVertex> {
+    class FDTreeVertex : public std::enable_shared_from_this<FDTreeVertex> {
     private:
+        // Move out these two in a struct or smth
         std::vector<std::shared_ptr<FDTreeVertex>> childs;
         boost::dynamic_bitset<> attributes;
+
         boost::dynamic_bitset<> fds;
         size_t numAttributes;
 
@@ -119,7 +119,7 @@ namespace HyFD::FDTree {
             }
         }
 
-        void getFdAndGeneralsRecursive(dynamic_bitset<> lhs, boost::dynamic_bitset<> curLhs,
+        void getFdAndGeneralsRecursive(boost::dynamic_bitset<> lhs, boost::dynamic_bitset<> curLhs,
                                        size_t rhs, size_t curBit, std::vector<boost::dynamic_bitset<>>& result) {
             if (isFd(rhs)) {
                 result.push_back(curLhs);
@@ -139,7 +139,7 @@ namespace HyFD::FDTree {
             }
         }
 
-        bool findFdOrGeneralRecursive(dynamic_bitset<> lhs, size_t rhs, size_t curBit) {
+        bool findFdOrGeneralRecursive(boost::dynamic_bitset<> lhs, size_t rhs, size_t curBit) {
 
             if (curBit >= lhs.size()) {
                 return false;
@@ -160,7 +160,21 @@ namespace HyFD::FDTree {
         std::shared_ptr<FDTreeVertex> root;
 
     public:
-        explicit FDTree(size_t numAttributes) : root(std::make_shared<FDTreeVertex>(numAttributes)) {}
+        explicit FDTree(size_t numAttributes) : root(std::make_shared<FDTreeVertex>(numAttributes)) {
+            for (size_t id = 0; id < numAttributes; id++) {
+                root->addFd(id);
+            }
+        }
+
+        /** Interface
+         *  - getLevel(i) -> nodes (retrievable lhs/rhs)
+         *  - findFdOrGeneral(lhs, rhs)
+         *  - findFd(lhs, rhs)
+         *  - addAndGetIfNew(lhs, rhs)
+         *
+         *  - remove
+         *  - add
+         * */
 
         size_t numAttributes() const {
             return root->numAttrs();
@@ -169,16 +183,13 @@ namespace HyFD::FDTree {
         // TODO: ummm... recursive calls? depth > 1??
         void addFD(boost::dynamic_bitset<> lhs, size_t rhs) {
             std::shared_ptr<FDTreeVertex> curNode = root;
-            root->addAttribute(rhs);
 
-            // bit < ...
-            for (int bit = lhs.find_first(); bit >= 0; bit = lhs.find_next(bit + 1)) {
-
+            for (size_t bit = lhs.find_first(); bit < lhs.size(); bit = lhs.find_next(bit)) {
+                curNode->addAttribute(bit);
                 curNode->addChild(bit);
-                curNode = root->getChild(bit);
-
-                curNode->addAttribute(rhs);
+                curNode = curNode->getChild(bit);
             }
+            curNode->addFd(rhs);
         }
 
 
@@ -211,7 +222,7 @@ namespace HyFD::FDTree {
 
             auto curNode = getRoot();
 
-            for (int attr = lhs.find_first();; attr = lhs.find_next(attr + 1)) {
+            for (size_t attr = lhs.find_first(); attr < lhs.size(); attr = lhs.find_next(attr)) {
                 if (!curNode->containsChildAt(attr)) {
                     break;
                 }

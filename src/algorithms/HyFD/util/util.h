@@ -2,9 +2,6 @@
 
 #include "PositionListIndex.h"
 
-
-#include <memory>
-
 namespace HyFD {
 
     inline bool isConstant(std::shared_ptr<util::PositionListIndex> pli) {

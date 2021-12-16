@@ -1,5 +1,9 @@
 #include "HyFD.h"
 
+#include "Sampler.h"
+#include "Inductor.h"
+#include "Validator.h"
+
 namespace HyFD {
 
     unsigned long long HyFD::executeInternal() {

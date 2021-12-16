@@ -1,14 +1,10 @@
 #pragma once 
 
-#include "HyFD.h"
-#include "structures/NonFDList.h"
 #include "structures/NonFds.h"
-#include "structures/FDTree.h"
+#include "util/PositionListIndex.h"
 
-#include <memory>
 #include <vector>
 #include <queue>
-#include <memory>
 
 namespace HyFD {
 

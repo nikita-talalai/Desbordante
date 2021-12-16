@@ -1,5 +1,7 @@
 #include "Validator.h"
 
+#include "util/util.h"
+
 namespace HyFD {
 
     FDValidations Validator::getValidations(const LhsPair &lhsPair) {

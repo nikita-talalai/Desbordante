@@ -1,8 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <iostream>
-#include <memory>
 #include <boost/dynamic_bitset.hpp>
 
 namespace HyFD {
