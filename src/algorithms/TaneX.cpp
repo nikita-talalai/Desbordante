@@ -1,7 +1,6 @@
 #include "TaneX.h"
 
 #include <chrono>
-#include <iostream>
 #include <iomanip>
 #include <list>
 #include <memory>
@@ -12,6 +11,7 @@
 #include "RelationalSchema.h"
 #include "LatticeLevel.h"
 #include "LatticeVertex.h"
+#include "logging/easylogging++.h"
 
 double Tane::calculateZeroAryFdError(ColumnData const* rhs,
                                      ColumnLayoutRelationData const* relationData) {
@@ -36,28 +36,19 @@ void Tane::registerFD(Vertical const& lhs, Column const* rhs,
                       [[maybe_unused]] double error,
                       [[maybe_unused]] RelationalSchema const* schema) {
     dynamic_bitset<> lhs_bitset = lhs.getColumnIndices();
-    /*std::cout << "Discovered FD: ";
-    for (size_t i = lhs_bitset.find_first(); i != dynamic_bitset<>::npos; i = lhs_bitset.find_next(i)) {
-        std::cout << schema->getColumn(i)->getName() << " ";
-    }
-    std::cout << "-> " << rhs->getName() << " - error equals " << error << std::endl;*/
     PliBasedFDAlgorithm::registerFD(lhs, *rhs);
     countOfFD++;
 }
-
-/*void Tane::registerFD(Vertical const* lhs, Column const* rhs, double error, RelationalSchema const* schema) {
-    registerFD(*lhs, rhs, error, schema);
-}*/
 
 void Tane::registerUCC([[maybe_unused]] Vertical const& key,
                        [[maybe_unused]] double error,
                        [[maybe_unused]] RelationalSchema const* schema)  {
     /*dynamic_bitset<> key_bitset = key.getColumnIndices();
-    std::cout << "Discovered UCC: ";
+    LOG(INFO) << "Discovered UCC: ";
     for (int i = key_bitset.find_first(); i != -1; i = key_bitset.find_next(i)) {
-        std::cout << schema->getColumn(i)->getName() << " ";
+        LOG(INFO) << schema->getColumn(i)->getName() << " ";
     }
-    std::cout << "- error equals " << error << std::endl;*/
+    LOG(INFO) << "- error equals " << error << std::endl;*/
     countOfUCC++;
 }
 
@@ -66,15 +57,15 @@ void Tane::registerUCC([[maybe_unused]] Vertical const& key,
 unsigned long long Tane::executeInternal() {
     RelationalSchema const* schema = relation_->getSchema();
 
-    std::cout << schema->getName() << " has " << relation_->getNumColumns() << " columns, "
+    LOG(INFO) << schema->getName() << " has " << relation_->getNumColumns() << " columns, "
          << relation_->getNumRows() << " rows, and a maximum NIP of " << std::setw(2)
-         << relation_->getMaximumNip() << "." << std::endl;
+         << relation_->getMaximumNip() << ".";
 
     for (auto& column : schema->getColumns()) {
         double avgPartners = relation_->getColumnData(column->getIndex()).
                 getPositionListIndex()->getNepAsLong() * 2.0 / relation_->getNumRows();
-        std::cout << "* " << column->toString() << ": every tuple has " << std::setw(2)
-             << avgPartners << " partners on average." << std::endl;
+        LOG(INFO) << "* " << column->toString() << ": every tuple has " << std::setw(2)
+             << avgPartners << " partners on average.";
     }
     auto startTime = std::chrono::system_clock::now();
     double progressStep = 100.0 / (schema->getNumColumns() + 1);
@@ -153,8 +144,8 @@ unsigned long long Tane::executeInternal() {
         //aprioriMillis += elapsed_milliseconds.count();
 
         util::LatticeLevel* level = levels[arity].get();
-        std::cout << "Checking " << level->getVertices().size() << " "
-                  << arity << "-ary lattice vertices." << std::endl;
+        LOG(TRACE) << "Checking " << level->getVertices().size() << " "
+                  << arity << "-ary lattice vertices.";
         if (level->getVertices().empty()) {
             break;
         }
@@ -258,7 +249,6 @@ unsigned long long Tane::executeInternal() {
 
         }
 
-        //cout << "Pruned level: " << level->getArity() << ". " << level->getVertices().size() << " vertices" << endl;
         //TODO: printProfilingData
         addProgress(progressStep);
     }
@@ -267,14 +257,13 @@ unsigned long long Tane::executeInternal() {
     std::chrono::milliseconds elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime);
     aprioriMillis += elapsed_milliseconds.count();
 
-    std::cout << "Time: " << aprioriMillis << " milliseconds" << std::endl;
-    std::cout << "Intersection time: " << util::PositionListIndex::micros / 1000
-              << "ms" << std::endl;
-    std::cout << "Total intersections: " << util::PositionListIndex::intersectionCount << std::endl;
-    std::cout << "Total FD count: " << countOfFD << std::endl;
-    std::cout << "Total UCC count: " << countOfUCC << std::endl;
-    // std::cout << "===== FD JSON ========" << getJsonFDs() << std::endl;
-    std::cout << "HASH: " << fletcher16() << std::endl;
+    LOG(INFO) << "Time: " << aprioriMillis << " milliseconds";
+    LOG(INFO) << "Intersection time: " << util::PositionListIndex::micros / 1000
+              << "ms";
+    LOG(INFO) << "Total intersections: " << util::PositionListIndex::intersectionCount;
+    LOG(INFO) << "Total FD count: " << countOfFD;
+    LOG(INFO) << "Total UCC count: " << countOfUCC;
+    LOG(INFO) << "HASH: " << fletcher16();
 
     return aprioriMillis;
 }

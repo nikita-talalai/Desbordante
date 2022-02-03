@@ -14,6 +14,7 @@
 #include <boost/dynamic_bitset.hpp>
 
 #include "ColumnLayoutRelationData.h"
+#include "logging/easylogging++.h"
 #include "PositionListIndex.h"
 #include "Vertical.h"
 
@@ -148,12 +149,12 @@ std::unique_ptr<PositionListIndex> PositionListIndex::probe(std::shared_ptr<cons
 
     for (auto & positions : index){
         for (int position : positions){
-            if (probingTable == nullptr) std::cout << "NULLPTR" << std::endl;
+            if (probingTable == nullptr) LOG(DEBUG) << "NULLPTR";
             if (position < 0 || static_cast<size_t>(position) >= probingTable->size()) {
-                std::cout << "position: " + std::to_string(position) +
-                             ", size: " + std::to_string(probingTable->size()) << std::endl;
+                LOG(DEBUG) << "position: " + std::to_string(position) +
+                             ", size: " + std::to_string(probingTable->size());
                 for (size_t i = 0; i < positions.size(); ++i) {
-                    std::cout << "Position " + std::to_string(positions[i]);
+                    LOG(DEBUG) << "Position " + std::to_string(positions[i]);
                 }
             }
             int probingTableValueId = (*probingTable)[position];

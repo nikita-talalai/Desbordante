@@ -4,12 +4,12 @@
 
 #include "FdG1Strategy.h"
 #include "KeyG1Strategy.h"
+#include "logging/easylogging++.h"
 #include "Pyro.h"
 
 std::mutex searchSpacesMutex;
 
 unsigned long long Pyro::executeInternal() {
-    using std::cout;
     auto startTime = std::chrono::system_clock::now();
 
     auto schema = relation_->getSchema();
@@ -100,20 +100,15 @@ unsigned long long Pyro::executeInternal() {
 
     setProgress(100);
     auto elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime);
-
-    LOG(DEBUG) << boost::format{"FdG1 error calculation: %1% ms"} % (FdG1Strategy::nanos_ / 1000000);
-    std::cout << "Init time: " << initTimeMillis << "ms" << std::endl;
-    std::cout << "Time: " << elapsed_milliseconds.count() << " milliseconds" << std::endl;
-    std::cout << "Error calculation count: " << totalErrorCalcCount << std::endl;
-    std::cout << "Total ascension time: " << totalAscension << "ms" << std::endl;
-    std::cout << "Total trickle time: " << totalTrickle << "ms" << std::endl;
-    std::cout << "Total intersection time: "
-              << util::PositionListIndex::micros / 1000 << "ms" << std::endl;
-    /*std::cout << "====RESULTS-FD====\r\n" << fdsToString();
-    std::cout << "====RESULTS-UCC====\r\n" << uccsToString();
-    std::cout << "====JSON-FD========\r\n" << FDAlgorithm::getJsonFDs() << std::endl;*/
-
-    std::cout << "HASH: " << PliBasedFDAlgorithm::fletcher16() << std::endl;
+    LOG(INFO) << boost::format{"FdG1 error calculation: %1% ms"} % (FdG1Strategy::nanos_ / 1000000);
+    LOG(INFO) << "Init time: " << initTimeMillis << "ms";
+    LOG(INFO) << "Time: " << elapsed_milliseconds.count() << " milliseconds";
+    LOG(INFO) << "Error calculation count: " << totalErrorCalcCount;
+    LOG(INFO) << "Total ascension time: " << totalAscension << "ms";
+    LOG(INFO) << "Total trickle time: " << totalTrickle << "ms";
+    LOG(INFO) << "Total intersection time: "
+              << util::PositionListIndex::micros / 1000 << "ms";
+    LOG(INFO) << "HASH: " << PliBasedFDAlgorithm::fletcher16();
     return elapsed_milliseconds.count();
 }
 

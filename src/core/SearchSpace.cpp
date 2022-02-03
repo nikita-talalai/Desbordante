@@ -1,6 +1,9 @@
-#include "logging/easylogging++.h"
 #include "SearchSpace.h"
+
 #include <queue>
+
+#include "logging/easylogging++.h"
+
 // TODO: extra careful with const& -> shared_ptr conversions via make_shared-smart pointer may delete the object - pass empty deleter [](*) {}
 
 void SearchSpace::discover() {
@@ -241,7 +244,7 @@ bool SearchSpace::ascend(DependencyCandidate const &launchPad) {
             break;
         }
     }
-    
+
     //std::cout << static_cast<std::string>(traversalCandidate) << std::endl;
 
     if (!error) {
@@ -283,7 +286,7 @@ bool SearchSpace::ascend(DependencyCandidate const &launchPad) {
 
 void SearchSpace::checkEstimate([[maybe_unused]] DependencyStrategy* strategy,
                                 [[maybe_unused]] DependencyCandidate const& traversalCandidate) {
-    std::cout << "Stepped into method 'checkEstimate' - not implemented yet being a debug method\n";
+    LOG(DEBUG) << "Stepped into method 'checkEstimate' - not implemented yet being a debug method\n";
 }
 
 void SearchSpace::trickleDown(Vertical const& mainPeak, double mainPeakError) {
@@ -649,14 +652,13 @@ bool SearchSpace::isKnownNonDependency(Vertical const& vertical,
 }
 
 void SearchSpace::printStats() const {
-    using std::cout, std::endl;
-    cout << "Trickling down from: " << tricklingDownFrom / 1000000 << endl;
-    cout << "Trickling down: " << tricklingDown / 1000000 - tricklingDownFrom / 1000000 << endl;
-    cout << "Trickling down nested:" << tricklingDownPart / 1000000 << endl;
-    cout << "Num nested: " << numNested / 1000000 << endl;
-    cout << "Ascending: " << ascending / 1000000<< endl;
-    cout << "Polling: " << pollingLaunchPads / 1000000 << endl;
-    cout << "Returning launch pad: " << returningLaunchPad / 1000000 << endl;
+    LOG(INFO) << "Trickling down from: " << tricklingDownFrom / 1000000;
+    LOG(INFO) << "Trickling down: " << tricklingDown / 1000000 - tricklingDownFrom / 1000000;
+    LOG(INFO) << "Trickling down nested:" << tricklingDownPart / 1000000;
+    LOG(INFO) << "Num nested: " << numNested / 1000000;
+    LOG(INFO) << "Ascending: " << ascending / 100000;
+    LOG(INFO) << "Polling: " << pollingLaunchPads / 1000000;
+    LOG(INFO) << "Returning launch pad: " << returningLaunchPad / 1000000;
 }
 
 void SearchSpace::ensureInitialized() {
