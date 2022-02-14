@@ -6,11 +6,12 @@ on:
     branches:
       - main
   workflow_dispatch:
-env:
-  BUILD_TYPE: Release
 jobs:
   run_tests: 
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        BUILD_TYPE: [ Release, Debug ]
     steps:
     - uses: actions/checkout@v2
     - name: Install build tools
@@ -29,6 +30,12 @@ jobs:
       with:
         path: ${{github.workspace}}/lib/googletest
         key: ${{ runner.os }}-googletest
+    - name: Cache easyloggingpp
+      uses: actions/cache@v2
+      id: cache-easyloggingpp
+      with:
+        path: ${{github.workspace}}/lib/easyloggingpp
+        key: ${{ runner.os }}-easyloggingpp
     - name: Install Boost
       run: |
         wget -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download
@@ -45,16 +52,23 @@ jobs:
         cd lib
         git clone https://github.com/google/googletest/ --branch release-1.10.0
       if: steps.cache-googletest.outputs.cache-hit != 'true'
+    - name: Download easyloggingpp
+      run: |
+        mkdir -p lib
+        sudo chown -R $USER lib
+        cd lib
+        git clone https://github.com/amrayn/easyloggingpp/ --branch v9.97.0
+      if: steps.cache-easyloggingpp.outputs.cache-hit != 'true'
     - name: Configure CMake
       run: >
         cmake -B ${{github.workspace}}/build
         -DCMAKE_C_COMPILER=gcc-10
         -DCMAKE_CXX_COMPILER=g++-10
         -DBOOST_ROOT=${{github.workspace}}/lib/boost
-        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}}
         -Dgtest_disable_pthreads=OFF
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.BUILD_TYPE}}
     - name: Test
       working-directory: ${{github.workspace}}/build/target
       shell: bash

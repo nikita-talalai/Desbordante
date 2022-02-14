@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <vector>
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "Pyro.h"
 
@@ -27,18 +27,18 @@ struct KeysTestParams {
 class KeysTest : public ::testing::TestWithParam<KeysTestParams> {};
 
 template<typename AlgoInterface>
-static inline void getKeysTestImpl(KeysTestParams const& p) {
+static inline void GetKeysTestImpl(KeysTestParams const& p) {
     auto const path = fs::current_path() / "inputData" / p.dataset;
     std::vector<unsigned int> actual;
     Pyro pyro(path, p.sep, p.has_header);
 
-    pyro.execute();
+    pyro.Execute();
 
     try {
-        std::vector<Column const*> const keys = pyro.AlgoInterface::getKeys();
+        std::vector<Column const*> const keys = pyro.AlgoInterface::GetKeys();
         actual.reserve(keys.size());
         std::transform(keys.cbegin(), keys.cend(), std::back_inserter(actual),
-                       [](Column const* col) { return col->getIndex(); });
+                       [](Column const* col) { return col->GetIndex(); });
     } catch (std::exception const& e) {
         std::cout << "Exception raised in test: " << e.what() << std::endl;
         FAIL();
@@ -50,20 +50,18 @@ static inline void getKeysTestImpl(KeysTestParams const& p) {
 }
 
 TEST_P(KeysTest, FDAlgorithmTest) {
-    getKeysTestImpl<FDAlgorithm>(GetParam());
+    GetKeysTestImpl<FDAlgorithm>(GetParam());
 }
 
 TEST_P(KeysTest, PliBasedAlgorithmTest) {
-    getKeysTestImpl<PliBasedFDAlgorithm>(GetParam());
+    GetKeysTestImpl<PliBasedFDAlgorithm>(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(, KeysTest, ::testing::Values(
-    KeysTestParams({ 0, 1, 2 }, "WDC_age.csv"),
-    KeysTestParams({ 0, 1, 2, 3, 4 }, "WDC_game.csv"),
-    KeysTestParams({ 0, 2 }, "WDC_appearances.csv"),
-    KeysTestParams({ 3, 4, 5 }, "WDC_astronomical.csv"),
-    KeysTestParams({ 0, 2 }, "CIPublicHighway700.csv"),
-    KeysTestParams({}, "abalone.csv", ',', false),
-    KeysTestParams({}, "adult.csv", ';', false)
-));
-
+INSTANTIATE_TEST_SUITE_P(, KeysTest,
+                         ::testing::Values(KeysTestParams({0, 1, 2}, "WDC_age.csv"),
+                                           KeysTestParams({0, 1, 2, 3, 4}, "WDC_game.csv"),
+                                           KeysTestParams({0, 2}, "WDC_appearances.csv"),
+                                           KeysTestParams({3, 4, 5}, "WDC_astronomical.csv"),
+                                           KeysTestParams({0, 2}, "CIPublicHighway700.csv"),
+                                           KeysTestParams({}, "abalone.csv", ',', false),
+                                           KeysTestParams({}, "adult.csv", ';', false)));

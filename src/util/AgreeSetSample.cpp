@@ -11,106 +11,104 @@ namespace util {
 
 using namespace std;
 
-double AgreeSetSample::stdDevSmoothing = 1;
+double AgreeSetSample::std_dev_smoothing_ = 1;
 
-AgreeSetSample::AgreeSetSample(ColumnLayoutRelationData const* relationData, Vertical focus, unsigned int sampleSize,
-                               unsigned long long populationSize):
-        relationData(relationData),
-        focus(std::move(focus)),
-        sampleSize(sampleSize),
-        populationSize(populationSize){
-}
+AgreeSetSample::AgreeSetSample(ColumnLayoutRelationData const* relation_data, Vertical focus,
+                               unsigned int sample_size, unsigned long long population_size)
+    : relation_data_(relation_data),
+      focus_(std::move(focus)),
+      sample_size_(sample_size),
+      population_size_(population_size) {}
 
-
-
-double AgreeSetSample::calculateNonNegativeFraction(double a, double b) {
+double AgreeSetSample::CalculateNonNegativeFraction(double a, double b) {
     // TODO: checking 0/b, comparing double to 0.
     if (a == 0)
         return 0;
     return max(std::numeric_limits<double>::min(), a / b);
 }
 
-std::unique_ptr<std::vector<unsigned long long>>
-AgreeSetSample::getNumAgreeSupersetsExt(Vertical const& agreement, Vertical const& disagreement) const {
-    return std::make_unique<std::vector<unsigned long long>> (
-            std::vector<unsigned long long> {
-                this->getNumAgreeSupersets(agreement), this->getNumAgreeSupersets(agreement, disagreement)
-            }
-        );
+std::unique_ptr<std::vector<unsigned long long>> AgreeSetSample::GetNumAgreeSupersetsExt(
+    Vertical const& agreement, Vertical const& disagreement) const {
+    return std::make_unique<std::vector<unsigned long long>>(
+        std::vector<unsigned long long>{this->GetNumAgreeSupersets(agreement),
+                                        this->GetNumAgreeSupersets(agreement, disagreement)});
 }
 
-double AgreeSetSample::estimateAgreements(Vertical const& agreement) const {
-    if (!agreement.contains(this->focus)) {
+double AgreeSetSample::EstimateAgreements(Vertical const& agreement) const {
+    if (!agreement.Contains(this->focus_)) {
         throw std::runtime_error("An agreement in estimateAgreemnts should contain the focus");
     }
 
-    if (populationSize == 0) {
+    if (population_size_ == 0) {
         return 0;
     }
-    return observationsToRelationRatio(this->getNumAgreeSupersets(agreement));
+    return ObservationsToRelationRatio(this->GetNumAgreeSupersets(agreement));
 }
 
-ConfidenceInterval AgreeSetSample::estimateAgreements(Vertical const& agreement, double confidence) const {
-    if (!agreement.contains(this->focus)) {
-        throw std::runtime_error("An agreement in estimateAgreemnts with confidence should contain the focus");
+ConfidenceInterval AgreeSetSample::EstimateAgreements(Vertical const& agreement,
+                                                      double confidence) const {
+    if (!agreement.Contains(this->focus_)) {
+        throw std::runtime_error(
+            "An agreement in estimateAgreemnts with confidence should contain the focus");
     }
-    if (populationSize == 0) {
+    if (population_size_ == 0) {
         return ConfidenceInterval(0, 0, 0);
     }
 
     //Counting the sampled tuples agreeing as requested - calling virtual method
-    long long numHits = this->getNumAgreeSupersets(agreement);
+    long long num_hits = this->GetNumAgreeSupersets(agreement);
 
-    return estimateGivenNumHits(numHits, confidence);
+    return EstimateGivenNumHits(num_hits, confidence);
 }
 
-ConfidenceInterval AgreeSetSample::estimateMixed(
-        Vertical const& agreement, Vertical const& disagreement, double confidence) const {
-    if (!agreement.contains(this->focus)) {
-        throw std::runtime_error("An agreement in estimateMixed should contain the focus");
+ConfidenceInterval AgreeSetSample::EstimateMixed(Vertical const& agreement,
+                                                 Vertical const& disagreement,
+                                                 double confidence) const {
+    if (!agreement.Contains(this->focus_)) {
+        throw std::runtime_error("An agreement in EstimateMixed should contain the focus");
     }
-    if (populationSize == 0) {
+    if (population_size_ == 0) {
         return ConfidenceInterval(0, 0, 0);
     }
 
     //Counting the sampled tuples agreeing as requested - calling virtual method
-    long long numHits = this->getNumAgreeSupersets(agreement, disagreement);
+    long long num_hits = this->GetNumAgreeSupersets(agreement, disagreement);
 
-    return estimateGivenNumHits(numHits, confidence);
+    return EstimateGivenNumHits(num_hits, confidence);
 }
 
-ConfidenceInterval AgreeSetSample::estimateGivenNumHits(unsigned long long numHits, double confidence) const {
-    double sampleRatio = numHits / static_cast<double>(sampleSize);
-    double relationRatio = ratioToRelationRatio(sampleRatio);
-    if (this->isExact() || confidence == -1) {
+ConfidenceInterval AgreeSetSample::EstimateGivenNumHits(unsigned long long num_hits,
+                                                        double confidence) const {
+    double sample_ratio = num_hits / static_cast<double>(sample_size_);
+    double relation_ratio = RatioToRelationRatio(sample_ratio);
+    if (this->IsExact() || confidence == -1) {
         //TODO: check all the stuff with confidence interval and what confidence is; possibility to use boost::optional
-        return ConfidenceInterval(relationRatio);
+        return ConfidenceInterval(relation_ratio);
     }
 
-    normal_distribution normalDistribution;
-    double z = probitFunction((confidence + 1) / 2);
-    double smoothedSampleRatio = (numHits + stdDevSmoothing / 2) / (sampleSize + stdDevSmoothing);
-    double stdDevPositiveTuples = sqrt(smoothedSampleRatio * (1 - smoothedSampleRatio) / sampleSize);
-    double minRatio = max(sampleRatio - z * stdDevPositiveTuples, calculateNonNegativeFraction(numHits, relationData->getNumTuplePairs()));
-    double maxRatio = sampleRatio + z * stdDevPositiveTuples;
+    normal_distribution normal_distribution;
+    double z = ProbitFunction((confidence + 1) / 2);
+    double smoothed_sample_ratio =
+        (num_hits + std_dev_smoothing_ / 2) / (sample_size_ + std_dev_smoothing_);
+    double std_dev_positive_tuples =
+        sqrt(smoothed_sample_ratio * (1 - smoothed_sample_ratio) / sample_size_);
+    double min_ratio =
+        max(sample_ratio - z * std_dev_positive_tuples,
+            CalculateNonNegativeFraction(num_hits, relation_data_->GetNumTuplePairs()));
+    double max_ratio = sample_ratio + z * std_dev_positive_tuples;
 
-    return ConfidenceInterval(ratioToRelationRatio(minRatio), relationRatio, ratioToRelationRatio(maxRatio));
+    return ConfidenceInterval(RatioToRelationRatio(min_ratio), relation_ratio,
+                              RatioToRelationRatio(max_ratio));
 }
 
 // Inverse cumulative distribution function of normal distribution
 // taken from https://www.quantstart.com/articles/Statistical-Distributions-in-C/
-double AgreeSetSample::probitFunction(double quantile) const {
+double AgreeSetSample::ProbitFunction(double quantile) const {
     // This is the Beasley-Springer-Moro algorithm which can
     // be found in Glasserman [2004].
-    static double a[4] = {   2.50662823884,
-                             -18.61500062529,
-                             41.39119773534,
-                             -25.44106049637};
+    static double a[4] = {2.50662823884, -18.61500062529, 41.39119773534, -25.44106049637};
 
-    static double b[4] = {  -8.47351093090,
-                            23.08336743743,
-                            -21.06224101826,
-                            3.13082909833};
+    static double b[4] = {-8.47351093090, 23.08336743743, -21.06224101826, 3.13082909833};
 
     static double c[9] = {0.3374754822726147,
                           0.9761690190917186,
@@ -126,22 +124,22 @@ double AgreeSetSample::probitFunction(double quantile) const {
         double num = 0.0;
         double denom = 1.0;
 
-        for (int i=0; i<4; i++) {
-            num += a[i] * pow((quantile - 0.5), 2*i + 1);
-            denom += b[i] * pow((quantile - 0.5), 2*i);
+        for (int i = 0; i < 4; i++) {
+            num += a[i] * pow((quantile - 0.5), 2 * i + 1);
+            denom += b[i] * pow((quantile - 0.5), 2 * i);
         }
-        return num/denom;
+        return num / denom;
 
     } else if (quantile > 0.92 && quantile < 1) {
         double num = 0.0;
 
-        for (int i=0; i<9; i++) {
-            num += c[i] * pow((log(-log(1-quantile))), i);
+        for (int i = 0; i < 9; i++) {
+            num += c[i] * pow((log(-log(1 - quantile))), i);
         }
         return num;
 
     } else {
-        return -1.0*probitFunction(1-quantile);
+        return -1.0 * ProbitFunction(1 - quantile);
     }
 }
 

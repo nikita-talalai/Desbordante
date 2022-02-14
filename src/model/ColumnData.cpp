@@ -10,14 +10,12 @@
 #include <random>
 #include <utility>
 
-
 ColumnData::ColumnData(Column const* column,
-                       std::unique_ptr<util::PositionListIndex> positionListIndex):
-        column(column),
-        positionListIndex_(std::move(positionListIndex)) {
-        //std::get<std::unique_ptr<PositionListIndex>>(positionListIndex_)->forceCacheProbingTable();
-        positionListIndex_->forceCacheProbingTable();
-    }
+                       std::unique_ptr<util::PositionListIndex> position_list_index)
+    : column_(column), position_list_index_(std::move(position_list_index)) {
+    // std::get<std::unique_ptr<PositionListIndex>>(position_list_index_)->ForceCacheProbingTable();
+    position_list_index_->ForceCacheProbingTable();
+}
 
 /*void ColumnData::shuffle() {
     std::random_device rd;
@@ -25,42 +23,42 @@ ColumnData::ColumnData(Column const* column,
     std::shuffle(probingTable.begin(), probingTable.end(), random);
 }*/
 
-bool ColumnData::operator==(const ColumnData &rhs) {
+bool ColumnData::operator==(const ColumnData& rhs) {
     if (this == &rhs) return true;
-    return this->column == rhs.column;
+    return this->column_ == rhs.column_;
 }
 
-//std::vector<int> const &ColumnData::getProbingTable() const {
-//    /*if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(positionListIndex_)) {
-//        return *std::get<std::unique_ptr<PositionListIndex>>(positionListIndex_)->getProbingTable();
+//std::vector<int> const &ColumnData::GetProbingTable() const {
+//    /*if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(position_list_index_)) {
+//        return *std::get<std::unique_ptr<PositionListIndex>>(position_list_index_)->GetProbingTable();
 //    } else {
-//        return *std::get<PositionListIndex*>(positionListIndex_)->getProbingTable();
+//        return *std::get<PositionListIndex*>(position_list_index_)->GetProbingTable();
 //    }*/
-//    return *positionListIndex_->getProbingTable();
+//    return *position_list_index_->GetProbingTable();
 //}
 //
 //int ColumnData::getProbingTableValue(int tupleIndex) const {
-////    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(positionListIndex_)) {
-////        return (*std::get<std::unique_ptr<PositionListIndex>>(positionListIndex_)->getProbingTable())[tupleIndex];
+////    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(position_list_index_)) {
+////        return (*std::get<std::unique_ptr<PositionListIndex>>(position_list_index_)->GetProbingTable())[tupleIndex];
 ////    } else {
-////        return (*std::get<PositionListIndex*>(positionListIndex_)->getProbingTable())[tupleIndex];
+////        return (*std::get<PositionListIndex*>(position_list_index_)->GetProbingTable())[tupleIndex];
 ////    }
 //
 //}
 //
-//PositionListIndex const *ColumnData::getPositionListIndex() const {
-////    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(positionListIndex_)) {
-////        return std::get<std::unique_ptr<PositionListIndex>>(positionListIndex_).get();
+//PositionListIndex const *ColumnData::GetPositionListIndex() const {
+////    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(position_list_index_)) {
+////        return std::get<std::unique_ptr<PositionListIndex>>(position_list_index_).get();
 ////    } else {
-////        return std::get<PositionListIndex*>(positionListIndex_);
+////        return std::get<PositionListIndex*>(position_list_index_);
 ////    }
-//    return positionListIndex_.get();
+//    return position_list_index_.get();
 //}
 
 //std::unique_ptr<PositionListIndex> ColumnData::moveOutPositionListIndex() {
-//    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(positionListIndex_)) {
-//        auto ownedPtr = std::move(std::get<std::unique_ptr<PositionListIndex>>(positionListIndex_));
-//        positionListIndex_ = ownedPtr.get();
+//    if (std::holds_alternative<std::unique_ptr<PositionListIndex>>(position_list_index_)) {
+//        auto ownedPtr = std::move(std::get<std::unique_ptr<PositionListIndex>>(position_list_index_));
+//        position_list_index_ = ownedPtr.get();
 //        return ownedPtr;
 //    } else {
 //        throw std::logic_error("PLI is already moved out");
